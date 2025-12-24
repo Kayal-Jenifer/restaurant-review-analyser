@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Review History</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .main-card { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 20px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a href="/" class="btn btn-outline-light btn-sm">← Back</a>
+            <span class="navbar-brand mb-0 h1">History Logs</span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="main-card">
+            <div class="row mb-4 text-center">
+    <div class="col-md-4">
+        <div class="card bg-success text-white p-3">
+            <h3>😊</h3>
+            <div id="posCount">Loading...</div>
+            <small>Positive Reviews</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-warning text-dark p-3">
+            <h3>😐</h3>
+            <div id="neuCount">Loading...</div>
+            <small>Neutral Reviews</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-danger text-white p-3">
+            <h3>☹️</h3>
+            <div id="negCount">Loading...</div>
+            <small>Negative Reviews</small>
+        </div>
+    </div>
+</div>
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Review</th>
+                        <th>Sentiment</th>
+                        <th>Score</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTable">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function loadHistory() {
+            // NOTE: Added leading slash / to ensure it hits the correct endpoint
+            const res = await fetch('/api/reviews'); 
+            if (!res.ok) {
+                console.error("Server returned error");
+                return;
+            }
+            const reviews = await res.json();
+            const table = document.getElementById('historyTable');
+
+            const pos = reviews.filter(r => r.label === 'Positive').length;
+        const neu = reviews.filter(r => r.label === 'Neutral').length;
+        const neg = reviews.filter(r => r.label === 'Negative').length;
+
+        document.getElementById('posCount').innerText = pos;
+        document.getElementById('neuCount').innerText = neu;
+        document.getElementById('negCount').innerText = neg;
+            
+            table.innerHTML = reviews.map(r => `
+                <tr id="row-${r.id}">
+                    <td><strong>${r.username}</strong></td>
+                    <td><small>${r.review_text}</small></td>
+                    <td><span class="badge ${r.label === 'Positive' ? 'bg-success' : r.label === 'Negative' ? 'bg-danger' : 'bg-warning text-dark'}">${r.label}</span></td>
+                    <td>${r.score}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteReview(${r.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function deleteReview(id) {
+            if (!confirm("Delete this review?")) return;
+            const res = await fetch(`/api/reviews/${id}`, { method: 'DELETE' });
+            if (res.ok) document.getElementById(`row-${id}`).remove();
+        }
+
+        loadHistory();
+    </script>
+</body>
+</html>
